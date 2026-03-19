@@ -10,13 +10,12 @@
 //============================================================================
 #include <iostream>
 #include <string>
-#include "repl.h"
 #include <sstream>
 #include <cstring>
 #include "repl.h"
 #include "statement.h"
-
-
+#include "table.h"
+#include "row.h"
 
 //============================================================================
 // Functions
@@ -29,7 +28,7 @@ Purpose : just prints db >
 ------------------------------------------------------------
 */
 void print_prompt() {
-    std::cout << "db > ";
+    std::cout << "db > " << std::flush;
 }
 
 /*
@@ -54,12 +53,11 @@ Purpose : if user types .exit, the db turns off
 */
 MetaCommandResult do_meta_command(const std::string& input) {
     if (input == ".exit") {
-        std::exit(EXIT_SUCCESS);
+        return MetaCommandResult::SUCCESS;
     }
 
     return MetaCommandResult::UNRECOGNIZED_COMMAND;
 }
-
 
 
 /*
@@ -70,22 +68,24 @@ input matches a command
 ------------------------------------------------------------
 */
 void run_repl() {
-
+    // create a table instance
+    Table* table = new_table();
+    
     while (true) {
         print_prompt();
         std::string input = read_input();
 
         if (!input.empty() && input[0] == '.') { // checks .exit else unrecognized
+        switch (do_meta_command(input)) {
+            case MetaCommandResult::SUCCESS:
+                free_table(table);   
+                return;              
 
-            switch (do_meta_command(input)) {
-                case MetaCommandResult::SUCCESS:
-                    continue;
-
-                case MetaCommandResult::UNRECOGNIZED_COMMAND:
-                    std::cout << "Unrecognized command '" << input << "'\n";
-                    continue;
-            }
+            case MetaCommandResult::UNRECOGNIZED_COMMAND:
+                std::cout << "Unrecognized command '" << input << "'\n";
+                continue;
         }
+}
 
         Statement statement;
         switch (prepare_statement(input, statement)) {
@@ -98,8 +98,18 @@ void run_repl() {
                 continue;
         }
 
-        execute_statement(statement);
-        std::cout << "Executed.\n";
-    }
-}
+        ExecuteResult result = execute_statement(&statement, table);
 
+        if (result == ExecuteResult::SUCCESS) {
+            std::cout << "Executed.\n" << std::flush;
+        }
+        else if (result == ExecuteResult::TABLE_FULL) {
+            std::cout << "Error: Table full.\n" << std::flush;
+        }
+        else {
+            std::cout << "Other Error\n" << std::flush;
+        }
+    }
+
+    free_table(table);
+}

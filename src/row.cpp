@@ -5,7 +5,6 @@
 
 
 
-
 //============================================================================
 // Include Statements
 //============================================================================
@@ -20,6 +19,7 @@ Deserialize row does opposite
 ------------------------------------------------------------
 */
 void serialize_row(Row* source, void* destination){
+    memset(destination, 0, ROW_SIZE); // zero out destination before copying
     memcpy((char*)destination + ID_OFFSET, &(source->id), ID_SIZE);
     memcpy((char*)destination + USERNAME_OFFSET, source->username, USERNAME_SIZE);
     memcpy((char*)destination + EMAIL_OFFSET, source->email, EMAIL_SIZE);
