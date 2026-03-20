@@ -5,7 +5,7 @@
 #include <string>
 #include "row.h"
 
-
+class Table;
 //============================================================================
 // Enums
 //============================================================================
@@ -22,6 +22,13 @@ enum class StatementType {
     SELECT
 };
 
+
+enum class ExecuteResult {
+    SUCCESS,
+    TABLE_FULL
+};
+
+
 // Statement struct
 struct Statement {
     StatementType type;
@@ -30,4 +37,4 @@ struct Statement {
 
 // Function declarations
 PrepareResult prepare_statement(const std::string& input, Statement& statement);
-void execute_statement(const Statement& statement);
+ExecuteResult execute_statement(Statement& statement, Table& table);

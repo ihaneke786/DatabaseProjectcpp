@@ -66,36 +66,33 @@ Purpose : Switch statement to do Insert or Select
 */
 
 // Insert command: this will insert row into table
-ExecuteResult execute_insert(Statement* statement, Table* table){
-    // see if table is full
-    if(table->num_rows == TABLE_MAX_ROWS){
+ExecuteResult execute_insert(Statement& statement, Table& table) {
+    if (table.num_rows == TABLE_MAX_ROWS) {
         return ExecuteResult::TABLE_FULL;
     }
 
-    serialize_row(&(statement->row_to_insert),row_slot(table, table->num_rows));
-    table->num_rows +=1;
+    serialize_row(&statement.row_to_insert, table.row_slot(table.num_rows));
+    table.num_rows += 1;
     return ExecuteResult::SUCCESS;
 }
 
 
-
 // Select command: This will print out results for select statement
-ExecuteResult execute_select(Statement* statement, Table* table){
+ExecuteResult execute_select(Statement& /*statement*/, Table& table) {
     Row tempRow;
-    for(uint32_t i =0; i < table->num_rows; i++){
-        deserialize_row(row_slot(table, i), &tempRow);
+    for (uint32_t i = 0; i < table.num_rows; i++) {
+        deserialize_row(table.row_slot(i), &tempRow);
         std::cout << tempRow.id <<
-        " " << tempRow.username <<
-        " " << tempRow.email << "\n";
+            " " << tempRow.username <<
+            " " << tempRow.email << "\n";
     }
     return ExecuteResult::SUCCESS;
 }
 
 
 // Switch statement for commands
-ExecuteResult execute_statement(Statement* statement, Table* table) {
-
-    switch (statement->type) {
+ExecuteResult execute_statement(Statement& statement, Table& table) {
+    switch (statement.type) {
 
         case StatementType::INSERT:
             return execute_insert(statement, table);
