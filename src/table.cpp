@@ -15,7 +15,7 @@
 
 /*
 ------------------------------------------------------------
-Function: row slot
+Function: row slot (used in cursor value function in cursor.cpp)
 Purpose : This function finds out where to read/write memory for a row.
 ------------------------------------------------------------
 */

@@ -22,7 +22,7 @@ Pager::Pager(const std::string& filename)
     // If file doesn't exist, create it
     if (!file.is_open()) {
         file.clear();
-        file.open(filename, std::ios::out | std::ios::binary);
+        file.open(filename, std::ios::out | std::ios::binary); // out means output(write to) and binary means treat as binary
         file.close();
 
         file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
@@ -34,43 +34,54 @@ Pager::Pager(const std::string& filename)
     }
 
     // Get file length
-    file.seekg(0, std::ios::end);
-    file_length = static_cast<uint32_t>(file.tellg());
+    file.seekg(0, std::ios::end); // This makes seek go to end of file to get final position to determine length
+    file_length = static_cast<uint32_t>(file.tellg()); // tellg gets current position of file pointer, since it is at end, gives us total bytes
 
     // Initialize page cache
     pages.resize(TABLE_MAX_PAGES);
 }
 
+// Pager Destructor
 Pager::~Pager() {
     if (file.is_open()) {
         file.close();
     }
 }
 
+
+/*
+------------------------------------------------------------
+Function: flush
+Purpose : writes the in-memory pages to disk
+------------------------------------------------------------
+*/
+
 void Pager::flush(uint32_t num_rows) {
     uint32_t num_full_pages = num_rows / ROWS_PER_PAGE;
     uint32_t num_additional_rows = num_rows % ROWS_PER_PAGE;
 
-    uint32_t pages_to_write = num_full_pages + (num_additional_rows > 0 ? 1 : 0);
+    uint32_t pages_to_write = num_full_pages + (num_additional_rows > 0 ? 1 : 0); // finds amount of pages to write to disk, if additional rows add page
 
     for (uint32_t i = 0; i < pages_to_write; i++) {
         if (!pages[i]) continue;
 
-        file.seekp(i * PAGE_SIZE);
-
-        if (i == num_full_pages && num_additional_rows > 0) {
+        file.seekp(i * PAGE_SIZE); // This moves file pointer to current page we to move to disk
+        
+        if (i == num_full_pages && num_additional_rows > 0) { // this case for writing a partial page
             uint32_t bytes_to_write = num_additional_rows * ROW_SIZE;
             file.write(pages[i].get(), bytes_to_write);
-        } else {
+        } 
+        else { // this case for writing a whole page
             file.write(pages[i].get(), PAGE_SIZE);
         }
     }
 
-    file.flush();
-    file.close();
+    file.flush(); // writes data to disk
+    file.close(); // closes file
 
     off_t target_size = static_cast<off_t>(num_rows * ROW_SIZE);
     int fd = open(filename.c_str(), O_RDWR);
+    
     if (fd == -1) {
         std::cerr << "Unable to open file for truncation\n";
         exit(EXIT_FAILURE);

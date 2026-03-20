@@ -15,6 +15,7 @@
 #include <cstring>
 #include "table.h"
 #include "row.h"
+#include "cursor.h"
 #include "statement.h"
 
 /*
@@ -71,8 +72,12 @@ ExecuteResult execute_insert(Statement& statement, Table& table) {
         return ExecuteResult::TABLE_FULL;
     }
 
-    serialize_row(&statement.row_to_insert, table.row_slot(table.num_rows));
+    Cursor cursor = table_end(table);
+
+    serialize_row(&statement.row_to_insert, cursor_value(cursor));
+
     table.num_rows += 1;
+
     return ExecuteResult::SUCCESS;
 }
 
@@ -80,12 +85,19 @@ ExecuteResult execute_insert(Statement& statement, Table& table) {
 // Select command: This will print out results for select statement
 ExecuteResult execute_select(Statement& /*statement*/, Table& table) {
     Row tempRow;
-    for (uint32_t i = 0; i < table.num_rows; i++) {
-        deserialize_row(table.row_slot(i), &tempRow);
-        std::cout << tempRow.id <<
-            " " << tempRow.username <<
-            " " << tempRow.email << "\n";
+
+    Cursor cursor = table_start(table);
+
+    while (!cursor.end_of_table) {
+        deserialize_row(cursor_value(cursor), &tempRow);
+
+        std::cout << tempRow.id << " "
+                  << tempRow.username << " "
+                  << tempRow.email << "\n";
+
+        cursor_advance(cursor);
     }
+
     return ExecuteResult::SUCCESS;
 }
 

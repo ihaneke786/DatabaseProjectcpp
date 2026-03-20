@@ -37,7 +37,7 @@ MetaCommandResult do_meta_command(const std::string& input) {
 //============================================================================
 void run_repl() {
 
-    // ✅ C++ object (NOT pointer)
+    // C++ object (NOT pointer)
     Table table("test.db");
 
     while (true) {
@@ -49,7 +49,7 @@ void run_repl() {
             switch (do_meta_command(input)) {
 
                 case MetaCommandResult::SUCCESS:
-                    return;  // ✅ triggers destructor automatically
+                    return;  // triggers destructor automatically
 
                 case MetaCommandResult::UNRECOGNIZED_COMMAND:
                     std::cout << "Unrecognized command '" << input << "'\n";
