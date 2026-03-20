@@ -1,10 +1,11 @@
-#include <sstream>
 #include <iostream>
 #include <cstring>
+#include <cstdio>
 #include "table.h"
 #include "row.h"
 #include "cursor.h"
 #include "statement.h"
+#include "btree.h"
 
 /*
 ------------------------------------------------------------
@@ -14,42 +15,20 @@ Handles INSERT and SELECT commands.
 ------------------------------------------------------------
 */
 PrepareResult prepare_statement(const std::string& input, Statement& statement) {
-    // Handle INSERT command
-    if (input.rfind("insert", 0) == 0) {
+    if (input.substr(0, 6) == "insert") {
         statement.type = StatementType::INSERT;
-        
-        // Parse the input to extract id, username, and email
-        std::istringstream iss(input);
         int id;
-        std::string keyword, username, email;
-        iss >> keyword >> id >> username >> email;
-        
-        // Check if parsing succeeded
-        if (iss.fail()) {
-            return PrepareResult::UNRECOGNIZED_STATEMENT;
+        char username[32], email[32];
+        if (sscanf(input.c_str(), "insert %d %31s %31s", &id, username, email) == 3) {
+            statement.row_to_insert.id = id;
+            strcpy(statement.row_to_insert.username, username);
+            strcpy(statement.row_to_insert.email, email);
+            return PrepareResult::SUCCESS;
         }
-        
-        // Store parsed values in the statement
-        statement.row_to_insert.id = id;
-        
-        // Copy username with null termination safety
-        strncpy(statement.row_to_insert.username, username.c_str(), sizeof(statement.row_to_insert.username) - 1);
-        statement.row_to_insert.username[sizeof(statement.row_to_insert.username) - 1] = '\0';
-        
-        // Copy email with null termination safety
-        strncpy(statement.row_to_insert.email, email.c_str(), sizeof(statement.row_to_insert.email) - 1);
-        statement.row_to_insert.email[sizeof(statement.row_to_insert.email) - 1] = '\0';
-        
-        return PrepareResult::SUCCESS;
-    }
-
-    // Handle SELECT command
-    if (input == "select") {
+    } else if (input == "select") {
         statement.type = StatementType::SELECT;
         return PrepareResult::SUCCESS;
     }
-
-    // Unknown command
     return PrepareResult::UNRECOGNIZED_STATEMENT;
 }
 
@@ -61,18 +40,14 @@ Returns error if table is full.
 ------------------------------------------------------------
 */
 ExecuteResult execute_insert(Statement& statement, Table& table) {
-    // Check if table is full before inserting
-    if (table.num_rows == TABLE_MAX_ROWS) {
+    void* node = table.pager.get_page(table.root_page_num);
+    if (LEAF_NODE_NUM_CELLS(node) >= LEAF_NODE_MAX_CELLS) {
         return ExecuteResult::TABLE_FULL;
     }
 
-    // Get cursor at end of table to insert new row
+    Row& row_to_insert = statement.row_to_insert;
     Cursor cursor = table_end(table);
-    // Convert row struct to binary format and store at cursor position
-    serialize_row(&statement.row_to_insert, cursor_value(cursor));
-    // Increment row count
-    table.num_rows += 1;
-
+    leaf_node_insert(cursor, row_to_insert.id, row_to_insert);
     return ExecuteResult::SUCCESS;
 }
 
