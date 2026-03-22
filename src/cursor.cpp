@@ -8,46 +8,26 @@ Purpose : Creates a cursor positioned at the beginning of the table.
 ------------------------------------------------------------
 */
 Cursor table_start(Table& table) {
-    Cursor cursor;
-    cursor.table = &table;
+    Cursor cursor = table_find(table, 0);
 
-    // Start at root node (which is currently always a leaf)
-    cursor.page_num = table.root_page_num;
-    cursor.cell_num = 0;
-
-    // Get the root node page
-    void* root_node = table.pager.get_page(table.root_page_num);
-
-    // Check how many cells are in the root
-    uint32_t num_cells = LEAF_NODE_NUM_CELLS(root_node);
-
-    // If no cells → end of table
+    void* node = table.pager.get_page(cursor.page_num);
+    uint32_t num_cells = *leaf_node_num_cells(node);
     cursor.end_of_table = (num_cells == 0);
 
     return cursor;
 }
 
-/*
-------------------------------------------------------------
-Function: table_end
-Purpose : Creates a cursor positioned at the end of the table (one past last row).
-------------------------------------------------------------
-*/
-Cursor table_end(Table& table) {
-    Cursor cursor;
-    cursor.table = &table;
 
-    // Go to root node (currently always a leaf)
-    cursor.page_num = table.root_page_num;
+// Searches tree for every given key
+Cursor table_find(Table& table, uint32_t key) {
+    uint32_t root_page_num = table.root_page_num;
+    void* root_node = table.pager.get_page(root_page_num);
 
-    void* root_node = table.pager.get_page(table.root_page_num);
-    uint32_t num_cells = LEAF_NODE_NUM_CELLS(root_node);
-
-    // Position cursor at the end (one past last cell)
-    cursor.cell_num = num_cells;
-    cursor.end_of_table = true;
-
-    return cursor;
+    if (get_node_type(root_node) == NodeType::LEAF) {
+        return leaf_node_find(table, root_page_num, key);
+    } else {
+        return internal_node_find(table, root_page_num, key);
+    }
 }
 
 /*
@@ -73,7 +53,15 @@ void cursor_advance(Cursor& cursor) {
     uint32_t page_num = cursor.page_num;
     void* node = cursor.table->pager.get_page(page_num);
     cursor.cell_num++;
-    if (cursor.cell_num >= LEAF_NODE_NUM_CELLS(node)) {
-        cursor.end_of_table = true;
+    if (cursor.cell_num >= *leaf_node_num_cells(node)) {
+        /* Advance to next leaf node */
+        uint32_t next_page_num = *leaf_node_next_leaf(node);
+        if (next_page_num == 0) {
+            /* This was rightmost leaf */
+            cursor.end_of_table = true;
+        } else {
+            cursor.page_num = next_page_num;
+            cursor.cell_num = 0;
+        }
     }
 }

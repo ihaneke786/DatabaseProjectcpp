@@ -41,13 +41,28 @@ Returns error if table is full.
 */
 ExecuteResult execute_insert(Statement& statement, Table& table) {
     void* node = table.pager.get_page(table.root_page_num);
-    if (LEAF_NODE_NUM_CELLS(node) >= LEAF_NODE_MAX_CELLS) {
-        return ExecuteResult::TABLE_FULL;
-    }
+
+    uint32_t num_cells = *leaf_node_num_cells(node);
 
     Row& row_to_insert = statement.row_to_insert;
-    Cursor cursor = table_end(table);
-    leaf_node_insert(cursor, row_to_insert.id, row_to_insert);
+    uint32_t key_to_insert = row_to_insert.id;
+
+    // Find correct position
+    Cursor cursor = table_find(table, key_to_insert);
+
+    // Check for duplicate
+    if (cursor.cell_num < num_cells) {
+        uint32_t key_at_index =
+            *leaf_node_key(node, cursor.cell_num);
+
+        if (key_at_index == key_to_insert) {
+            return ExecuteResult::DUPLICATE_KEY;
+        }
+    }
+
+    // Insert at correct position
+    leaf_node_insert(cursor, key_to_insert, row_to_insert);
+
     return ExecuteResult::SUCCESS;
 }
 

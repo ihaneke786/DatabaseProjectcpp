@@ -21,8 +21,8 @@ MetaCommandResult do_meta_command(const std::string& input, Table& table) {
         return MetaCommandResult::SUCCESS;
     }
     if (input == ".btree") {
-        void* root_node = table.pager.get_page(table.root_page_num);
-        print_leaf_node(root_node);
+        std::cout << "Tree:\n";
+        print_tree(table.pager, table.root_page_num, 0);
         return MetaCommandResult::SUCCESS;
     }
     return MetaCommandResult::UNRECOGNIZED_COMMAND;
@@ -50,8 +50,15 @@ void run_repl() {
         ExecuteResult result = execute_statement(statement, table);
         if (result == ExecuteResult::SUCCESS) {
             std::cout << "Executed.\n";
-        } else if (result == ExecuteResult::TABLE_FULL) {
+        } 
+        else if (result == ExecuteResult::DUPLICATE_KEY) {
+            std::cout << "Error: Duplicate key.\n";
+        } 
+        else if (result == ExecuteResult::TABLE_FULL) {
             std::cout << "Error: Table full.\n";
+        } 
+        else {
+            std::cout << "Other Error\n";
         }
     }
 }

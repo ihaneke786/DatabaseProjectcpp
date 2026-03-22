@@ -11,5 +11,6 @@ struct Cursor {
 // functions we need elsewhere
 Cursor table_start(Table& table);
 Cursor table_end(Table& table);
+Cursor table_find(Table& table, uint32_t key);
 char* cursor_value(Cursor& cursor);
 void cursor_advance(Cursor& cursor) ;

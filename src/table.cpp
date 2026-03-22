@@ -10,12 +10,15 @@ Purpose : Initializes a new table by opening the database file
 and calculating the current number of rows stored.
 ------------------------------------------------------------
 */
-Table::Table(const std::string& filename) : pager(filename) {
+Table::Table(const std::string& filename)
+    : pager(filename) {
+
     root_page_num = 0;
+
     if (pager.num_pages == 0) {
-        char* root_node = pager.get_page(0);
+        void* root_node = pager.get_page(0);
         initialize_leaf_node(root_node);
-        SET_ROOT(root_node, true);
+        set_node_root(root_node, true);
     }
 }
 

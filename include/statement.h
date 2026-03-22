@@ -25,7 +25,8 @@ enum class StatementType {
 
 enum class ExecuteResult {
     SUCCESS,
-    TABLE_FULL
+    TABLE_FULL,
+    DUPLICATE_KEY
 };
 
 

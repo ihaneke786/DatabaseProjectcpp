@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <fstream>
 #include <vector>
 
@@ -17,4 +18,10 @@ public:
 
     char* get_page(uint32_t page_num);
     void flush(uint32_t page_num);
+
+    /*
+     * Until we start recycling free pages, new pages will always
+     * go onto the end of the database file
+     */
+    uint32_t get_unused_page_num() const { return num_pages; }
 };
